@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Salud Animal</title>
+    <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+    <h1>Gestión de Salud Animal</h1>
+
+    <div class="main-container">
+        <!-- Formulario -->
+        <form id="form-agregar-salud">
+            <h2>Agregar Registro de Salud</h2>
+            <label for="id-animal">ID:</label>
+            <input type="text" id="id-animal" name="id-animal" required>
+
+            <label for="animal">Nombre del Animal:</label>
+            <input type="text" id="animal" name="animal" required>
+
+            <label for="vacuna">Vacuna:</label>
+            <input type="text" id="vacuna" name="vacuna" required>
+
+            <label for="tratamiento">Tratamiento:</label>
+            <input type="text" id="tratamiento" name="tratamiento" required>
+
+            <label for="descripcion">Descripción:</label>
+            <textarea id="descripcion" name="descripcion" required></textarea>
+
+            <label for="estado-salud">Estado de Salud:</label>
+            <input type="text" id="estado-salud" name="estado-salud" required>
+
+            <button type="submit">Agregar Registro</button>
+        </form>
+
+        <!-- Tabla -->
+        <div class="table-container">
+            <table id="lista-salud">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Animal</th>
+                        <th>Estado de Salud</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Filas generadas dinámicamente -->
+                </tbody>
+            </table>
+
+            <!-- Detalle del Registro -->
+            <div id="detalle-registro" class="detalle-oculto">
+                <h2>Detalle del Registro</h2>
+                <p><strong>ID:</strong> <span id="detalle-id"></span></p>
+                <p><strong>Animal:</strong> <span id="detalle-animal"></span></p>
+                <p><strong>Vacuna:</strong> <span id="detalle-vacuna"></span></p>
+                <p><strong>Tratamiento:</strong> <span id="detalle-tratamiento"></span></p>
+                <p><strong>Descripción:</strong> <span id="detalle-descripcion"></span></p>
+                <p><strong>Estado de Salud:</strong> <span id="detalle-estado-salud"></span></p>
+                <button onclick="ocultarDetalles()">Cerrar Detalles</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('form-agregar-salud').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const registro = {
+                id: document.getElementById('id-animal').value,
+                animal: document.getElementById('animal').value,
+                vacuna: document.getElementById('vacuna').value,
+                tratamiento: document.getElementById('tratamiento').value,
+                descripcion: document.getElementById('descripcion').value,
+                estadoSalud: document.getElementById('estado-salud').value,
+            };
+
+            const response = await fetch('/agregar-salud', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(registro),
+            });
+
+            if (response.ok) {
+                alert('Registro agregado');
+                event.target.reset();
+                loadRegistrosSalud();
+            } else {
+                alert('Error al agregar el registro');
+            }
+        });
+
+        async function loadRegistrosSalud() {
+            const response = await fetch('/lista-salud');
+            const data = await response.json();
+            const tbody = document.querySelector('#lista-salud tbody');
+            tbody.innerHTML = '';
+
+            data.data.items.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.id}</td>
+                    <td>${item.animal}</td>
+                    <td>${item.estadoSalud}</td>
+                    <td class="actions">
+                        <button onclick="mostrarDetalles('${item.id}')">Ver Detalles</button>
+                        <button onclick="eliminarRegistro('${item.id}')">Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function mostrarDetalles(id) {
+            const response = await fetch(`/detalle-salud/${id}`);
+            const data = await response.json();
+
+            document.getElementById('detalle-id').textContent = data.id;
+            document.getElementById('detalle-animal').textContent = data.animal;
+            document.getElementById('detalle-vacuna').textContent = data.vacuna;
+            document.getElementById('detalle-tratamiento').textContent = data.tratamiento;
+            document.getElementById('detalle-descripcion').textContent = data.descripcion;
+            document.getElementById('detalle-estado-salud').textContent = data.estadoSalud;
+
+            document.getElementById('detalle-registro').classList.remove('detalle-oculto');
+        }
+
+        function ocultarDetalles() {
+            document.getElementById('detalle-registro').classList.add('detalle-oculto');
+        }
+
+        async function eliminarRegistro(id) {
+            const response = await fetch(`/eliminar-salud/${id}`, { method: 'DELETE' });
+            if (response.ok) {
+                alert('Registro eliminado');
+                loadRegistrosSalud();
+            } else {
+                alert('Error al eliminar');
+            }
+        }
+
+        loadRegistrosSalud();
+    </script>
+</body>
+</html>
